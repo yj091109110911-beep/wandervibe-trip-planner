@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WanderVibe 漫步時光｜風格一日行程規劃師</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#F4F7F5',
+              100: '#E6ECE8',
+              500: '#4A6B5D',
+              600: '#3D594C',
+              700: '#2E4339',
+            },
+            accent: {
+              coral: '#E07A5F',
+              sand: '#F4F1DE',
+              navy: '#2B2D42',
+              cream: '#FDFBF7'
+            }
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Noto Sans TC"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Leaflet CSS for Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- SortableJS for Drag and Drop -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-[#F8F9FA] text-accent-navy antialiased min-h-screen flex flex-col font-sans selection:bg-brand-500 selection:text-white">
+
+  <!-- Top Announcement Bar / Student Tag -->
+  <header class="bg-brand-700 text-white text-xs py-2 px-4 shadow-sm border-b border-brand-600">
+    <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-2">
+      <div class="flex items-center space-x-2">
+        <span class="bg-brand-500/80 text-white px-2 py-0.5 rounded font-mono font-medium">期末專題作品</span>
+        <span class="text-white/90">商業設計系 CD000A 第9組・學號 11333160 黃榆景</span>
+      </div>
+      <div class="flex items-center space-x-3 text-white/80 text-[11px]">
+        <span><i class="fa-solid fa-check-circle text-emerald-400 mr-1"></i>CRUD 資料管理</span>
+        <span><i class="fa-solid fa-check-circle text-emerald-400 mr-1"></i>即時預算重算</span>
+        <span><i class="fa-solid fa-check-circle text-emerald-400 mr-1"></i>互動地圖連動</span>
+        <span><i class="fa-solid fa-check-circle text-emerald-400 mr-1"></i>分帳計算器</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Navigation Navbar -->
+  <nav class="bg-white/95 backdrop-blur-md sticky top-0 z-30 border-b border-gray-200/80 shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between h-16 items-center">
+        <!-- Logo & Title -->
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-brand-500 flex items-center justify-center text-white shadow-md shadow-brand-500/20">
+            <i class="fa-solid fa-compass text-lg"></i>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="font-bold text-lg tracking-tight text-gray-900">WanderVibe</span>
+              <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-accent-coral/10 text-accent-coral border border-accent-coral/20">漫步時光</span>
+            </div>
+            <p class="text-[11px] text-gray-500">設計師的一日城市漫遊・互動行程與預算小工具</p>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center space-x-2 sm:space-x-3">
+          <button id="openSplitBillBtn" class="inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors shadow-2xs">
+            <i class="fa-solid fa-calculator text-brand-600"></i>
+            <span>多人分帳</span>
+          </button>
+          <button id="exportPdfBtn" class="inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors shadow-2xs">
+            <i class="fa-solid fa-print text-gray-600"></i>
+            <span class="hidden sm:inline">列印 / 匯出</span>
+          </button>
+          <button id="addItemBtn" class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 text-xs sm:text-sm font-medium rounded-lg text-white bg-brand-600 hover:bg-brand-700 shadow-sm transition-all hover:shadow hover:-translate-y-0.5 active:translate-y-0">
+            <i class="fa-solid fa-plus"></i>
+            <span>新增景點</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero & Trip Overview Header -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-4 w-full">
+    <div class="relative rounded-2xl overflow-hidden bg-gradient-to-r from-brand-700 via-brand-600 to-emerald-800 text-white p-6 sm:p-8 shadow-lg">
+      <div class="absolute -right-10 -bottom-10 opacity-10 text-9xl pointer-events-none">
+        <i class="fa-solid fa-route"></i>
+      </div>
+      
+      <div class="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+        <div>
+          <div class="flex flex-wrap items-center gap-2 mb-2">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/20 backdrop-blur-xs text-white">一日精選旅程</span>
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/30 text-emerald-200 border border-emerald-400/30"><i class="fa-solid fa-sun mr-1"></i>24°C 微風宜人</span>
+            <span id="tripStatusTag" class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/30 text-amber-200">6 個景點安排中</span>
+          </div>
+          <h1 id="tripTitleDisplay" class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white mb-2 flex items-center group cursor-pointer" title="點擊快速修改行程主題">
+            <span>台北文青設計漫遊・大稻埕與赤峰街一日策展</span>
+            <i class="fa-solid fa-pen text-sm text-white/50 ml-2.5 group-hover:text-white transition-colors"></i>
+          </h1>
+          <p id="tripDescDisplay" class="text-sm text-emerald-100/90 max-w-2xl leading-relaxed">
+            穿梭於老台北紅磚洋樓與當代設計選物店之間，結合美學咖啡館、百年糕點手藝與當代藝術館展覽，享受充滿設計靈感的一日散策。
+          </p>
+        </div>
+
+        <!-- Quick Summary Stats Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full lg:w-auto shrink-0 bg-white/10 backdrop-blur-md p-3.5 rounded-xl border border-white/15">
+          <div class="text-center px-3 py-1">
+            <p class="text-[11px] text-white/70 uppercase tracking-wider">預估總花費</p>
+            <p class="text-xl font-bold text-white mt-0.5" id="statTotalBudget">NT$ 1,280</p>
+          </div>
+          <div class="text-center px-3 py-1 border-l border-white/15">
+            <p class="text-[11px] text-white/70 uppercase tracking-wider">總活動時間</p>
+            <p class="text-xl font-bold text-white mt-0.5" id="statTotalTime">11.5 小時</p>
+          </div>
+          <div class="text-center px-3 py-1 border-l border-white/15">
+            <p class="text-[11px] text-white/70 uppercase tracking-wider">停靠站數</p>
+            <p class="text-xl font-bold text-white mt-0.5" id="statTotalStops">6 站</p>
+          </div>
+          <div class="text-center px-3 py-1 border-l border-white/15">
+            <p class="text-[11px] text-white/70 uppercase tracking-wider">步行總步數</p>
+            <p class="text-xl font-bold text-white mt-0.5" id="statWalkSteps">~9,800 步</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content Layout (Timeline + Map / Details) -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+    <!-- Left Column: Itinerary Timeline (7 cols) -->
+    <div class="lg:col-span-7 flex flex-col space-y-4">
+      
+      <!-- Filter and View Controls Bar -->
+      <div class="bg-white p-3 rounded-xl border border-gray-200/80 shadow-2xs flex flex-wrap justify-between items-center gap-3">
+        <!-- Category Filters -->
+        <div class="flex items-center space-x-1 overflow-x-auto py-1 scrollbar-none" id="categoryFilterGroup">
+          <button class="filter-btn active-filter px-3 py-1 rounded-lg text-xs font-medium transition-all" data-category="all">
+            全部 (6)
+          </button>
+          <button class="filter-btn px-3 py-1 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-100 transition-all" data-category="food">
+            🍜 美食咖啡
+          </button>
+          <button class="filter-btn px-3 py-1 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-100 transition-all" data-category="sight">
+            🏛️ 歷史人文
+          </button>
+          <button class="filter-btn px-3 py-1 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-100 transition-all" data-category="art">
+            🎨 設計藝文
+          </button>
+          <button class="filter-btn px-3 py-1 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-100 transition-all" data-category="shop">
+            🛍️ 風格選品
+          </button>
+        </div>
+
+        <!-- Utility Buttons -->
+        <div class="flex items-center space-x-2">
+          <button id="recalculateScheduleBtn" class="text-xs text-brand-600 hover:text-brand-700 font-medium flex items-center space-x-1 px-2.5 py-1 rounded hover:bg-brand-50 transition-colors" title="依照順序重算整天時間軸">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span>依序校準時間</span>
+          </button>
+          <button id="resetDefaultBtn" class="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100 transition-colors" title="恢復預設台北文青一日遊資料">
+            <i class="fa-solid fa-arrow-rotate-left"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Drag & Drop Timeline Container -->
+      <div class="relative pl-6 sm:pl-8" id="timelineContainer">
+        <!-- Connecting Vertical Line (CSS styled) -->
+        <div class="absolute left-3.5 sm:left-4 top-4 bottom-8 w-0.5 bg-gradient-to-b from-brand-500 via-brand-200 to-emerald-400"></div>
+
+        <!-- Dynamic Timeline Item Cards will be injected here -->
+        <div id="itineraryList" class="space-y-4">
+          <!-- Dynamic Cards -->
+        </div>
+
+        <!-- Add Step Quick Button (at bottom of timeline) -->
+        <div class="pt-2 pl-4">
+          <button id="quickAddBottomBtn" class="w-full py-3 border-2 border-dashed border-gray-300 hover:border-brand-500 rounded-xl text-gray-500 hover:text-brand-600 hover:bg-brand-50/50 flex items-center justify-center space-x-2 text-sm font-medium transition-all group">
+            <i class="fa-solid fa-plus-circle text-base text-gray-400 group-hover:text-brand-500 transition-colors"></i>
+            <span>在行程最後新增下一個景點 / 休憩站</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Interactive Map & Budget Analytics (5 cols) -->
+    <div class="lg:col-span-5 flex flex-col space-y-5 sticky top-20">
+
+      <!-- Map Card -->
+      <div class="bg-white rounded-2xl border border-gray-200/80 shadow-xs overflow-hidden">
+        <div class="px-4 py-3 bg-gray-50/80 border-b border-gray-200 flex justify-between items-center">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-map-location-dot text-brand-600"></i>
+            <h3 class="font-bold text-sm text-gray-800">一日路徑地圖導引</h3>
+          </div>
+          <span class="text-[11px] text-gray-500 bg-white px-2 py-0.5 rounded border border-gray-200">
+            <i class="fa-solid fa-location-arrow text-emerald-500 mr-1"></i>連線順序路線
+          </span>
+        </div>
+        <!-- Leaflet Map Container -->
+        <div id="travelMap" class="h-64 sm:h-72 w-full z-10 bg-gray-100"></div>
+        <div class="p-3 bg-white text-xs text-gray-500 flex justify-between items-center border-t border-gray-100">
+          <span>點擊卡片可聚焦該景點座標</span>
+          <button id="fitMapBoundsBtn" class="text-brand-600 hover:underline font-medium">看全天路徑</button>
+        </div>
+      </div>
+
+      <!-- Budget & Expense Analytics Card (CRUD Re-calculated Live) -->
+      <div class="bg-white rounded-2xl border border-gray-200/80 shadow-xs p-5">
+        <div class="flex justify-between items-center mb-4">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-chart-pie text-accent-coral"></i>
+            <h3 class="font-bold text-sm text-gray-800">一日花費統計與佔比分析</h3>
+          </div>
+          <span class="text-xs font-semibold px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
+            即時動態重算
+          </span>
+        </div>
+
+        <!-- Budget Breakdown Bar -->
+        <div class="space-y-3">
+          <div class="flex justify-between text-xs text-gray-600">
+            <span>費用類別分佈</span>
+            <span id="budgetSummaryText">總計 NT$ 1,280</span>
+          </div>
+
+          <!-- Multi-colored Progress Bar -->
+          <div class="w-full h-3 rounded-full overflow-hidden flex bg-gray-100 shadow-inner" id="budgetProgressBar">
+            <div id="barFood" style="width: 50%" class="bg-amber-400 h-full transition-all duration-500" title="餐飲咖啡"></div>
+            <div id="barTicket" style="width: 20%" class="bg-purple-400 h-full transition-all duration-500" title="門票與藝文"></div>
+            <div id="barShop" style="width: 20%" class="bg-rose-400 h-full transition-all duration-500" title="選品與紀念品"></div>
+            <div id="barTransit" style="width: 10%" class="bg-emerald-400 h-full transition-all duration-500" title="交通車資"></div>
+          </div>
+
+          <!-- Breakdown Legend -->
+          <div class="grid grid-cols-2 gap-2 pt-2 text-xs">
+            <div class="flex items-center justify-between p-2 rounded-lg bg-amber-50/70 border border-amber-100">
+              <span class="flex items-center space-x-1.5 text-gray-700">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                <span>餐飲咖啡</span>
+              </span>
+              <span class="font-bold text-gray-900" id="costFood">NT$ 650</span>
+            </div>
+            <div class="flex items-center justify-between p-2 rounded-lg bg-purple-50/70 border border-purple-100">
+              <span class="flex items-center space-x-1.5 text-gray-700">
+                <span class="w-2.5 h-2.5 rounded-full bg-purple-400"></span>
+                <span>門票展覽</span>
+              </span>
+              <span class="font-bold text-gray-900" id="costTicket">NT$ 100</span>
+            </div>
+            <div class="flex items-center justify-between p-2 rounded-lg bg-rose-50/70 border border-rose-100">
+              <span class="flex items-center space-x-1.5 text-gray-700">
+                <span class="w-2.5 h-2.5 rounded-full bg-rose-400"></span>
+                <span>選品購物</span>
+              </span>
+              <span class="font-bold text-gray-900" id="costShop">NT$ 450</span>
+            </div>
+            <div class="flex items-center justify-between p-2 rounded-lg bg-emerald-50/70 border border-emerald-100">
+              <span class="flex items-center space-x-1.5 text-gray-700">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                <span>交通車資</span>
+              </span>
+              <span class="font-bold text-gray-900" id="costTransit">NT$ 80</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Travel Tips Box -->
+        <div class="mt-4 p-3 bg-brand-50 rounded-xl border border-brand-100 text-xs text-brand-700 flex items-start space-x-2">
+          <i class="fa-solid fa-lightbulb text-brand-600 mt-0.5"></i>
+          <div>
+            <p class="font-bold">設計師漫遊小叮嚀</p>
+            <p class="text-[11px] text-brand-600 mt-0.5">大稻埕與赤峰街的選品店多於 11:30 後開始營業，當代藝術館週一休館，若需調整可點擊編輯或拖曳調整時間！</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Course & Project Grading Checklist (加分項即時檢核) -->
+      <div class="bg-white rounded-2xl border border-gray-200/80 shadow-xs p-5">
+        <h3 class="font-bold text-sm text-gray-800 mb-2 flex items-center space-x-2">
+          <i class="fa-solid fa-award text-amber-500"></i>
+          <span>期末專題 4 項加分指標自我檢核</span>
+        </h3>
+        <p class="text-xs text-gray-500 mb-3">依據《自然科學與人工智慧》評分規準：</p>
+        
+        <div class="space-y-2 text-xs">
+          <div class="flex items-center justify-between p-2 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+            <span class="flex items-center space-x-2">
+              <i class="fa-solid fa-circle-check text-emerald-600"></i>
+              <span>1. 資料管理（CRUD）：增刪改查與動態重算</span>
+            </span>
+            <span class="font-bold text-emerald-700">+10 分</span>
+          </div>
+          <div class="flex items-center justify-between p-2 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+            <span class="flex items-center space-x-2">
+              <i class="fa-solid fa-circle-check text-emerald-600"></i>
+              <span>2. 網站上線：準備部署至 Vercel 公開網址</span>
+            </span>
+            <span class="font-bold text-emerald-700">+10 分</span>
+          </div>
+          <div class="flex items-center justify-between p-2 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+            <span class="flex items-center space-x-2">
+              <i class="fa-solid fa-circle-check text-emerald-600"></i>
+              <span>3. 個人貢獻：GitHub 專案庫與 Commit 紀錄</span>
+            </span>
+            <span class="font-bold text-emerald-700">+10 分</span>
+          </div>
+          <div class="flex items-center justify-between p-2 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+            <span class="flex items-center space-x-2">
+              <i class="fa-solid fa-circle-check text-emerald-600"></i>
+              <span>4. 完成度與創意：商設系美學、拖曳排序、分帳</span>
+            </span>
+            <span class="font-bold text-emerald-700">+10 分</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Modal: Add / Edit Itinerary Stop (CRUD Create & Update) -->
+  <div id="itemModal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-gray-100 transform transition-all">
+      <div class="flex justify-between items-center pb-3 border-b border-gray-100 mb-4">
+        <h3 id="modalTitle" class="text-lg font-bold text-gray-900 flex items-center space-x-2">
+          <i class="fa-solid fa-location-dot text-brand-600"></i>
+          <span>新增行程項目</span>
+        </h3>
+        <button id="closeModalBtn" class="text-gray-400 hover:text-gray-600 text-lg p-1">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="itemForm" class="space-y-4">
+        <input type="hidden" id="editItemId" value="">
+
+        <!-- Title -->
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">景點 / 活動名稱 *</label>
+          <input type="text" id="inputName" required placeholder="例如：迪化街合興壹玖肆柒" class="w-full px-3.5 py-2 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
+        </div>
+
+        <!-- Category & Icon -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">項目分類 *</label>
+            <select id="inputCategory" class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 outline-none">
+              <option value="food">🍜 美食咖啡</option>
+              <option value="sight">🏛️ 歷史人文</option>
+              <option value="art">🎨 設計藝文</option>
+              <option value="shop">🛍️ 風格選品</option>
+              <option value="transit">🚶 交通散步</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">抵達時間 *</label>
+            <input type="time" id="inputTime" required value="10:00" class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 outline-none">
+          </div>
+        </div>
+
+        <!-- Duration & Cost -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">預計停留 (分鐘) *</label>
+            <input type="number" id="inputDuration" min="10" max="480" step="10" value="60" required class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">預估費用 (NT$) *</label>
+            <input type="number" id="inputCost" min="0" step="10" value="150" required class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 outline-none">
+          </div>
+        </div>
+
+        <!-- Coordinates (Latitude & Longitude) for Map Sync -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">緯度 (Latitude)</label>
+            <input type="number" step="0.00001" id="inputLat" value="25.0560" class="w-full px-3 py-2 text-xs rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">經度 (Longitude)</label>
+            <input type="number" step="0.00001" id="inputLng" value="121.5100" class="w-full px-3 py-2 text-xs rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 outline-none">
+          </div>
+        </div>
+
+        <!-- Transportation & Location detail -->
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">交通方式或地址</label>
+          <input type="text" id="inputTransit" placeholder="例如：由前一站步行 8 分鐘，沿赤峰街巷弄前行" class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 outline-none">
+        </div>
+
+        <!-- Notes / Highlights -->
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">設計亮點 / 備忘筆記</label>
+          <textarea id="inputNotes" rows="2" placeholder="例如：外牆保留日治時期建築風貌，推薦招牌鬆糕配東方美人茶" class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 outline-none"></textarea>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex justify-end space-x-2 pt-3 border-t border-gray-100">
+          <button type="button" id="cancelModalBtn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+            取消
+          </button>
+          <button type="submit" class="px-5 py-2 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-sm transition-colors">
+            儲存項目
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Split Bill Calculator (多人分帳計算機) -->
+  <div id="splitBillModal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100">
+      <div class="flex justify-between items-center pb-3 border-b border-gray-100 mb-4">
+        <h3 class="text-lg font-bold text-gray-900 flex items-center space-x-2">
+          <i class="fa-solid fa-users text-brand-600"></i>
+          <span>旅行多人均攤分帳計算</span>
+        </h3>
+        <button id="closeSplitBillBtn" class="text-gray-400 hover:text-gray-600 text-lg p-1">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">當日行程總花費 (NT$)</label>
+          <input type="number" id="splitTotalAmount" class="w-full px-3.5 py-2 text-base font-bold text-brand-700 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 outline-none" value="1280">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">同行總人數 (人)</label>
+          <div class="flex items-center space-x-3">
+            <button id="decPersonBtn" class="w-9 h-9 rounded-lg bg-gray-100 hover:bg-gray-200 font-bold text-gray-700">-</button>
+            <input type="number" id="splitPeopleCount" min="1" max="20" value="2" class="w-20 text-center py-1.5 font-bold text-base rounded-lg border border-gray-300 outline-none">
+            <button id="incPersonBtn" class="w-9 h-9 rounded-lg bg-gray-100 hover:bg-gray-200 font-bold text-gray-700">+</button>
+            <span class="text-xs text-gray-500">人同行</span>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-xl bg-brand-50 border border-brand-100 text-center">
+          <p class="text-xs text-brand-600 font-medium uppercase tracking-wider">每人平均分攤金額</p>
+          <p class="text-3xl font-extrabold text-brand-700 mt-1" id="splitPerPersonDisplay">NT$ 640</p>
+          <p class="text-[11px] text-brand-500 mt-1">（已自動包含公費與各站預計支出）</p>
+        </div>
+
+        <div class="text-xs text-gray-500">
+          <label class="flex items-center space-x-2 cursor-pointer">
+            <input type="checkbox" id="syncWithTotalCheckbox" checked class="rounded text-brand-600 focus:ring-brand-500">
+            <span>隨時連動當前行程計算的最新總金額</span>
+          </label>
+        </div>
+
+        <div class="pt-2">
+          <button id="confirmSplitBillBtn" class="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg font-medium text-sm transition-colors">
+            確認並套用
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-gray-200 py-6 mt-12 text-center text-xs text-gray-500">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
+      <p>© 2026 WanderVibe 一日風格漫旅小工具 ｜ 自然科學與人工智慧期末專題</p>
+      <p class="text-gray-400">商業設計系 11333160 黃榆景 製作・AI Agent Vibe Coding 實踐</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
